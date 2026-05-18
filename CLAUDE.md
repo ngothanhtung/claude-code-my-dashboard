@@ -1,190 +1,106 @@
 # CLAUDE.md
 
-## Tổng quan dự án
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Đây là template **Next.js 16 (App Router) dashboard** với TypeScript, shadcn/ui, Tailwind CSS v4, Firebase (Firestore + Auth + Storage), và Zustand. Cấu trúc theo pattern multi-feature: mỗi feature có service layer, components, và mock data riêng.
+## Project Overview
 
-## Tech Stack
+A comprehensive admin dashboard template built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, and **shadcn/ui**. Features include multiple dashboard layouts, app modules (mail, chat, calendar, tasks), authentication pages, and a live theme customizer.
 
-<!-- markdownlint-disable MD060 -->
+## Dev Commands
 
-| Category      | Choice                                                       |
-| ------------- | ------------------------------------------------------------ |
-| Framework     | Next.js 16.1.1 (App Router)                                  |
-| Language      | TypeScript 5.9.3                                             |
-| Styling       | Tailwind CSS v4 + CSS variables                              |
-| UI Library    | shadcn/ui (style: `new-york`)                                |
-| Icons         | lucide-react                                                 |
-| Tables        | @tanstack/react-table 8.21.3                                 |
-| Forms         | react-hook-form + @hookform/resolvers + zod 4.3.2            |
-| State         | Zustand 5.0.9                                                |
-| Auth/Database | Firebase Auth (client) + Firebase Admin (server) + Firestore |
-| Storage       | Firebase Storage                                             |
-| Charts        | Recharts 3.6.0                                               |
-| Theme         | next-themes + custom ThemeProvider + SidebarConfigProvider   |
-| Toast         | sonner 2.0.7                                                 |
-| Date          | date-fns 4.1.0 + react-day-picker 9.13.0                     |
-
-<!-- markdownlint-enable MD060 -->
-
-## Cấu trúc thư mục
-
-```text
-src/
-  app/                          # Next.js App Router
-    (auth)/                     # Route group: không sidebar
-      sign-in/, sign-up/, forgot-password/
-      errors/                   # forbidden, internal-server-error, not-found, unauthorized, under-maintenance
-    (dashboard)/                # Route group: có sidebar
-      dashboard/, dashboard-2/, dashboard-3/
-      tasks/, users/, chat/, mail/, calendar/
-      faqs/, pricing/
-      mock-data/                # Firestore seed UI
-      settings/                 # user, account, billing, appearance, notifications, connections
-    landing/                    # Public landing page
-    layout.tsx                  # Root layout (ThemeProvider, SidebarConfigProvider)
-  components/
-    ui/                         # 40 shadcn/ui components
-    app-sidebar.tsx, site-header.tsx, site-footer.tsx
-    theme-provider.tsx, mode-toggle.tsx
-    theme-customizer/           # Panel tùy chỉnh theme/layout
-  modules/                      # Feature modules — xem mục "Module Pattern" bên dưới
-    tasks/, users/, chat/, mail/, calendar/
-    dashboard/, dashboard-2/, dashboard-3/
-    faqs/, pricing/, settings/, mock-data-services.ts
-  lib/
-    firebase/
-      client.ts                 # Firebase client (app, auth, db, storage)
-      admin.ts                  # Firebase Admin SDK (server-only)
-      auth.ts                   # signIn/signUp helpers
-      firestore-query.ts        # getFirestoreCollection (có mock fallback)
-      mock-data-seeder.ts       # Server-side seeder (Admin SDK + batch write)
-    utils.ts                    # cn() helper
-    fonts.ts                    # Inter font config
-  contexts/
-    theme-context.ts            # ThemeProviderContext (dark/light/system)
-    sidebar-context.tsx         # SidebarConfigProvider + useSidebarConfig
-  hooks/                        # use-theme, use-sidebar-config, ...
+```bash
+npm run dev      # Start dev server (Turbopack enabled)
+npm run build    # Production build
+npm run start    # Start production server
+npm run lint     # Run ESLint
 ```
 
-<!-- markdownlint-disable MD040 -->
+**Note**: Turbopack is enabled in `next.config.ts`. ESLint uses `next/core-web-vitals` + `next/typescript`.
 
-## Module Pattern
+## Architecture
 
-Mỗi feature theo cùng cấu trúc. **`tasks`** là canonical reference (đầy đủ nhất):
+### Route Groups
+
+- `src/app/page.tsx` → redirects to `/dashboard`
+- `src/app/(auth)/` → auth pages (sign-in, sign-up, forgot-password, error pages)
+- `src/app/(private)/` → protected app pages (dashboard, mail, chat, calendar, tasks, users, settings, etc.)
+- `src/app/landing/` → marketing landing page with sections (hero, features, pricing, testimonials, etc.)
+
+### Feature Modules
+
+Each app feature lives under `src/modules/<feature>/` with a consistent structure:
 
 ```
-src/app/(dashboard)/<feature>/page.tsx
-src/modules/<feature>/
-  services/
-    types/<feature>-types.ts      # zod schema + TypeScript interfaces
-    <feature>-mock-data.ts        # Static mock data (import JSON)
-    <feature>-services.ts        # Firestore query helpers
-    mock-data-services.ts        # Seeder cho feature này
-    data/<feature>.json           # JSON data file
-  components/
-    data-table.tsx                 # Tanstack Table wrapper
-    columns.tsx                    # Column definitions
-    data-table-toolbar.tsx         # Search, filter selects, add button
-    data-table-faceted-filter.tsx # Command-palette filter
-    data-table-pagination.tsx     # Pagination
-    data-table-view-options.tsx   # Column visibility toggle
-    data-table-row-actions.tsx    # Dropdown: view/edit/delete
-    add-<feature>-modal.tsx       # Create dialog
-    stat-cards.tsx                 # Optional stat cards
+modules/<feature>/
+├── components/         # Feature-specific React components
+├── hooks/              # Feature-specific hooks (e.g., use-calendar.ts, use-mail.ts)
+├── services/           # Data fetching, mock data, and business logic
+│   ├── data/           # JSON mock data files
+│   ├── types/          # TypeScript type definitions
+│   └── *-services.ts  # Service functions
 ```
 
-<!-- markdownlint-enable MD040 -->
+Key modules: `calendar`, `chat`, `dashboard`, `dashboard-2`, `faqs`, `mail`, `pricing`, `settings`, `tasks`, `users`.
 
-Các modules hiện có: **tasks** (đầy đủ nhất), **users** (react-hook-form + zod), **chat** (Zustand store), **mail** (3-panel layout), **calendar** (date normalization), **dashboard/dashboard-2/dashboard-3**, **faqs**, **pricing**, **settings**.
+### UI Components
 
-## Quy ước quan trọng
+All reusable shadcn/ui components are in `src/components/ui/`. These are generated components wrapping Radix UI primitives with Tailwind styling.
 
-### Firebase Firestore
+### Theming System
 
-- **Collection naming**: số nhiều, snake_case (`tasks`, `users`, `conversations`, `messages`)
-- **Mock data fallback**: luôn truyền mock data làm fallback — service dùng `getFirestoreCollection`
-- **No real-time**: KHÔNG dùng `onSnapshot`
-- **CRUD pattern**: KHÔNG viết direct Firestore CRUD ở service — xử lý trên local state (callback pattern)
-- **Timestamps**: dùng `serverTimestamp()` khi seed bằng Admin SDK
-- **Client vs Admin**: components/pages chỉ dùng `client.ts`; seeder dùng `admin.ts` với `server-only`
+Theme customization works by setting CSS variables on `document.documentElement`. Key files:
 
-### Page types
+- `src/components/theme-provider.tsx` — manages light/dark/system theme via class toggling
+- `src/hooks/use-theme-manager.ts` — applies preset themes, custom themes, or imported themes via CSS variable injection
+- `src/config/theme-customizer-constants.ts` — color definitions and constants
+- `src/config/theme-data.ts` — preset color themes
+- `src/types/theme-customizer.ts` — type definitions for themes and presets
 
-- **Server pages** (async): gọi service trực tiếp, `await` data, truyền vào components. Ví dụ: `dashboard`, `calendar`, `mail`, `faqs`, `pricing`
-- **Client pages** (`"use client"`): khởi tạo state với mock data, fetch Firestore trong `useEffect`, quản lý state cục bộ. Ví dụ: `tasks`, `users`, `chat`
+The `ThemeCustomizer` component (in `src/components/theme-customizer/`) allows live customization of theme, layout, and radius via a slide-over panel.
 
-### Form validation
+### Sidebar Layout System
 
-Dùng `react-hook-form` + `@hookform/resolvers/zod`. Định nghĩa schema với zod, dùng `zodResolver` trong `useForm`.
+Sidebar behavior is configured via `SidebarConfigContext` (`src/contexts/sidebar-context.tsx`):
 
-### cn() utility
+- `variant`: "sidebar" | "floating" | "inset"
+- `collapsible`: "offcanvas" | "icon" | "none"
+- `side`: "left" | "right"
 
-Luôn dùng `cn()` từ `@/lib/utils` để merge Tailwind classes — KHÔNG dùng template literals cho conditional classes.
+`AppSidebar` reads this config and is used in the `(private)` layout.
 
-### Path alias
+### Authentication
 
-`@/*` map tới `./src/*` (cấu hình trong `tsconfig.json`).
+Firebase Authentication is used. Auth helpers are in `src/lib/firebase/auth.ts`:
 
-## Firebase Integration
+- `signInWithEmailPassword`, `signInWithGoogle`, `signUpWithEmailPassword`, `signOutUser`
+- Error messages are localized in Vietnamese
+- Firebase config comes from `.env.local` (not committed — see `.gitignore`)
 
-### getFirestoreCollection (src/lib/firebase/firestore-query.ts)
+### State Management
 
-```typescript
-// Thử Firestore trước, fallback sang mock data nếu empty hoặc lỗi
-const data = await getFirestoreCollection<TaskItem>("tasks", TaskMockData)
-```
+- **Zustand** for global state
+- **React Context** for theme (`ThemeProvider`) and sidebar config (`SidebarConfigProvider`)
+- **React Hook Form + Zod** for form validation
+- **`onAuthStateChanged`** in `AppSidebar` to track Firebase auth state
 
-### Mock Data Seeder (src/lib/firebase/mock-data-seeder.ts)
+### Styling
 
-- Server-side dùng Admin SDK + batch writes với `merge: true`
-- Idempotent: re-seeding ghi đè document cùng ID
-- Thêm `seededAt: FieldValue.serverTimestamp()` vào mỗi document
-- UI seeder ở `/mock-data` cho phép seed từng feature hoặc tất cả
+- **Tailwind CSS v4** with `@tailwindcss/postcss` — uses `@theme inline {}` block for CSS variable definitions
+- CSS variables (e.g., `--background`, `--primary`, `--radius`) are set on `:root` and `.dark`
+- `src/lib/utils.ts` exports `cn()` — a `clsx` + `tailwind-merge` utility for conditional classNames
 
-### Auth (src/lib/firebase/auth.ts)
+### URL Redirects
 
-- `signInWithEmailPassword(email, password)`
-- `signUpWithEmailPassword(email, password, displayName)`
-- Error messages bằng tiếng Việt
+Defined in `next.config.ts`:
+
+- `/home` → `/dashboard` (permanent redirect)
+
+Legacy URL proxy in `src/proxy.ts`:
+
+- `/login` → `/sign-in`, `/register` → `/sign-up`
 
 ## Environment Variables
 
-**Client Firebase** (Next.js client-side, ký tự `NEXT_PUBLIC_`):
-`NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
+Firebase config is stored in `.env.local` (gitignored). Required vars:
 
-**Server Firebase Admin** (server-only, không `NEXT_PUBLIC_`):
-`FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`
-
-Xem `.env.example` để biết đầy đủ template.
-
-## Thêm feature mới
-
-Khi thêm feature mới, tham khảo skill **`nextjs-firebase-feature`** tại `.claude/skills/nextjs-firebase-feature/SKILL.md`. Các bước chính:
-
-1. Tạo types với zod schema
-2. Tạo mock data (array of items)
-3. Tạo service dùng `getFirestoreCollection`
-4. Tạo columns, row actions, toolbar, pagination, view options
-5. Tạo data table (Tanstack Table)
-6. Tạo add modal
-7. Tạo stat cards (optional)
-8. Tạo page ghép mọi thứ lại
-9. Chạy `npx tsc --noEmit` kiểm tra TypeScript
-10. Chạy `npm run dev` xác nhận hoạt động
-
-## Conventions
-
-- Functional components + hooks — không dùng React class components
-- Server components ưu tiên, chỉ dùng `"use client"` khi cần interaction hoặc state
-- Các thư viện UI được dynamic import trong `src/components/dynamic-imports.ts`
-- Recharts dùng cho charts, tanstack/react-table cho tables
-- Toast notifications dùng `sonner`
-- Date handling với `date-fns`
-
-## Lưu ý khi làm việc
-
-- Không reveal internal Firestore config hoặc private keys
-- Firebase error messages tiếng Việt trong `auth.ts`
-- Mock data seeder là server action, dùng `admin.ts` không phải `client.ts`
-- Nếu thêm feature mới: đọc SKILL.md trước khi code
+- `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`
