@@ -18,6 +18,7 @@ import {
   LayoutTemplate,
   Users,
   UsersRound,
+  Film,
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -84,6 +85,17 @@ const data = {
           title: "Customers",
           url: "/customers",
           icon: UsersRound,
+        },
+        {
+          title: "Movies",
+          url: "#",
+          icon: Film,
+          items: [
+            {
+              title: "Popular",
+              url: "/movies/popular",
+            },
+          ],
         },
       ],
     },
