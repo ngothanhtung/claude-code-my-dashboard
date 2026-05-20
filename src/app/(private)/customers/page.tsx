@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { onAuthStateChanged, type User } from "firebase/auth"
+import { toast } from "sonner"
 import { DataTable } from "@/modules/customers/components/data-table"
 import { CustomerOverview } from "@/modules/customers/components/customer-overview"
 import { CustomerFormDialog } from "@/modules/customers/components/customer-form-dialog"
@@ -10,15 +12,24 @@ import {
   getCustomers,
   updateCustomer,
 } from "@/modules/customers/services/customer-services"
+import { auth } from "@/lib/firebase/client"
 import type { Customer, CustomerFormValues } from "@/modules/customers/services/types/customer-types"
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   useEffect(() => {
     getCustomers().then(setCustomers)
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user)
+    })
+    return unsubscribe
   }, [])
 
   function generateId() {
@@ -47,8 +58,24 @@ export default function CustomersPage() {
   }
 
   async function handleDelete(id: string) {
+    const customer = customers.find((c) => c.id === id)
     await deleteCustomer(id)
     setCustomers(prev => prev.filter((c) => c.id !== id))
+
+    const res = await fetch("/api/customers/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customerId: id,
+        customerName: customer?.name ?? "Không xác định",
+        userName: currentUser?.displayName ?? "Người dùng",
+        userEmail: currentUser?.email ?? "",
+      }),
+    })
+
+    if (!res.ok) {
+      toast.error("Gửi thông báo Telegram thất bại. Kiểm tra console.")
+    }
   }
 
   function handleEdit(customer: Customer) {

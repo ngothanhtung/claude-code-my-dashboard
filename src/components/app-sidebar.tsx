@@ -19,6 +19,8 @@ import {
   Users,
   UsersRound,
   Film,
+  Package,
+  BarChart3,
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -85,6 +87,16 @@ const data = {
           title: "Customers",
           url: "/customers",
           icon: UsersRound,
+        },
+        {
+          title: "Products",
+          url: "/products",
+          icon: Package,
+        },
+        {
+          title: "Revenues",
+          url: "/revenues",
+          icon: BarChart3,
         },
         {
           title: "Movies",

@@ -1,0 +1,19 @@
+[
+  { "id": "rev_001", "month": 1, "year": 2025, "revenue": 12000000 },
+  { "id": "rev_002", "month": 2, "year": 2025, "revenue": 13500000 },
+  { "id": "rev_003", "month": 3, "year": 2025, "revenue": 14800000 },
+  { "id": "rev_004", "month": 4, "year": 2025, "revenue": 16200000 },
+  { "id": "rev_005", "month": 5, "year": 2025, "revenue": 15900000 },
+  { "id": "rev_006", "month": 6, "year": 2025, "revenue": 18500000 },
+  { "id": "rev_007", "month": 7, "year": 2025, "revenue": 17200000 },
+  { "id": "rev_008", "month": 8, "year": 2025, "revenue": 19100000 },
+  { "id": "rev_009", "month": 9, "year": 2025, "revenue": 21400000 },
+  { "id": "rev_010", "month": 10, "year": 2025, "revenue": 22800000 },
+  { "id": "rev_011", "month": 11, "year": 2025, "revenue": 24500000 },
+  { "id": "rev_012", "month": 12, "year": 2025, "revenue": 27100000 },
+  { "id": "rev_013", "month": 1, "year": 2026, "revenue": 18500000 },
+  { "id": "rev_014", "month": 2, "year": 2026, "revenue": 19800000 },
+  { "id": "rev_015", "month": 3, "year": 2026, "revenue": 22300000 },
+  { "id": "rev_016", "month": 4, "year": 2026, "revenue": 24600000 },
+  { "id": "rev_017", "month": 5, "year": 2026, "revenue": 28900000 }
+]

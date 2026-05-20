@@ -1,0 +1,153 @@
+[
+  {
+    "id": "prod_001",
+    "name": "iPhone 15 Pro Max",
+    "price": 34990000,
+    "description": "Điện thoại thông minh cao cấp của Apple với chip A17 Pro, camera 48MP, màn hình Super Retina XDR 6.7 inch.",
+    "in_stock": true,
+    "categories": "Electronics",
+    "images": [
+      "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400",
+      "https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=400"
+    ],
+    "createdAt": "2024-01-15T08:00:00Z",
+    "updatedAt": "2024-03-20T10:30:00Z",
+    "discount": 10,
+    "tags": ["new", "popular", "apple"]
+  },
+  {
+    "id": "prod_002",
+    "name": "MacBook Air M3",
+    "price": 28990000,
+    "description": "Laptop siêu mỏng nhẹ với chip Apple M3, thời lượng pin lên đến 18 giờ.",
+    "in_stock": true,
+    "categories": "Electronics",
+    "images": [
+      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400"
+    ],
+    "createdAt": "2024-02-01T09:00:00Z",
+    "updatedAt": "2024-03-15T14:00:00Z",
+    "discount": 5,
+    "tags": ["laptop", "apple", "new"]
+  },
+  {
+    "id": "prod_003",
+    "name": "Áo Hoodie Nike Sportswear",
+    "price": 1890000,
+    "description": "Áo hoodie nam phong cách thể thao, chất liệu vải nỉ mềm mại, co giãn tốt.",
+    "in_stock": true,
+    "categories": "Fashion",
+    "images": [
+      "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400"
+    ],
+    "createdAt": "2024-01-20T11:00:00Z",
+    "updatedAt": "2024-02-28T16:00:00Z",
+    "discount": 20,
+    "tags": ["sale", "clothing", "nike"]
+  },
+  {
+    "id": "prod_004",
+    "name": "Ghế Gaming Ergonomic Pro",
+    "price": 5990000,
+    "description": "Ghế gaming cao cấp với thiết kế công thái học, hỗ trợ lưng, tay vịn 4D, đệm ngồi êm ái.",
+    "in_stock": false,
+    "categories": "Home & Garden",
+    "images": [
+      "https://images.unsplash.com/photo-1598550476439-6847785fcea6?w=400"
+    ],
+    "createdAt": "2024-01-10T07:30:00Z",
+    "updatedAt": "2024-03-10T09:00:00Z",
+    "discount": 15,
+    "tags": ["gaming", "furniture", "sale"]
+  },
+  {
+    "id": "prod_005",
+    "name": "Bộ Dụng Cụ Sửa Chữa 86 Món",
+    "price": 890000,
+    "description": "Bộ dụng cụ sửa chữa đa năng 86 món, bao gồm tuốc nơ vít, kìm, búa, khoan cầm tay mini.",
+    "in_stock": true,
+    "categories": "Home & Garden",
+    "images": [
+      "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=400"
+    ],
+    "createdAt": "2024-02-15T10:00:00Z",
+    "updatedAt": "2024-03-05T11:00:00Z",
+    "discount": 0,
+    "tags": ["tools", "home"]
+  },
+  {
+    "id": "prod_006",
+    "name": "Bóng Đá Adidas Tango",
+    "price": 650000,
+    "description": "Quả bóng đá thi đấu chính hãng Adidas, thiết kế Tango truyền thống, độ bền cao.",
+    "in_stock": true,
+    "categories": "Sports",
+    "images": [
+      "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400"
+    ],
+    "createdAt": "2024-01-25T08:00:00Z",
+    "updatedAt": "2024-02-20T15:00:00Z",
+    "discount": 10,
+    "tags": ["sports", "football", "adidas"]
+  },
+  {
+    "id": "prod_007",
+    "name": "Nồi Chiên Không Dầu 5L",
+    "price": 2290000,
+    "description": "Nồi chiên không dầu công suất 1800W, dung tích 5L, nấu ăn nhanh, tiết kiệm dầu 80%.",
+    "in_stock": true,
+    "categories": "Home & Garden",
+    "images": [
+      "https://images.unsplash.com/photo-1648145952225-e2f03d3a88bc?w=400"
+    ],
+    "createdAt": "2024-02-10T09:30:00Z",
+    "updatedAt": "2024-03-18T13:00:00Z",
+    "discount": 25,
+    "tags": ["kitchen", "sale", "popular"]
+  },
+  {
+    "id": "prod_008",
+    "name": "Sách Clean Code",
+    "price": 299000,
+    "description": "Cuốn sách kinh điển về lập trình của Robert C. Martin, hướng dẫn viết code sạch và dễ bảo trì.",
+    "in_stock": true,
+    "categories": "Books",
+    "images": [
+      "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
+    ],
+    "createdAt": "2024-01-05T10:00:00Z",
+    "updatedAt": "2024-01-05T10:00:00Z",
+    "discount": 0,
+    "tags": ["programming", "books", "new"]
+  },
+  {
+    "id": "prod_009",
+    "name": "Bộ Lego Technic 42143 Ferrari",
+    "price": 8990000,
+    "description": "Bộ Lego Technic siêu xe Ferrari Daytona SP3 1:8 scale, 3778 mảnh ghép, chi tiết cao.",
+    "in_stock": false,
+    "categories": "Toys",
+    "images": [
+      "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400"
+    ],
+    "createdAt": "2024-02-20T11:00:00Z",
+    "updatedAt": "2024-03-22T08:00:00Z",
+    "discount": 0,
+    "tags": ["lego", "toys", "popular"]
+  },
+  {
+    "id": "prod_010",
+    "name": "Máy Lọc Không Khí Xiaomi Air Purifier 4",
+    "price": 3490000,
+    "description": "Máy lọc không khí thông minh, lọc HEPA H13, diệt 99.97% bụi mịn PM2.5, kết nối Mi Home.",
+    "in_stock": true,
+    "categories": "Health",
+    "images": [
+      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400"
+    ],
+    "createdAt": "2024-03-01T09:00:00Z",
+    "updatedAt": "2024-03-25T10:00:00Z",
+    "discount": 15,
+    "tags": ["health", "smart-home", "sale"]
+  }
+]
