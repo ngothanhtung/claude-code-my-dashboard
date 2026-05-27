@@ -79,6 +79,11 @@ const data = {
           icon: Calendar,
         },
         {
+          title: "Google Calendar",
+          url: "/google/calendar",
+          icon: Calendar,
+        },
+        {
           title: "Users",
           url: "/users",
           icon: Users,
