@@ -138,6 +138,19 @@ export async function requestGoogleAuth(): Promise<{ accessToken: string; expire
   });
 }
 
+/** ---------- Types ---------- */
+
+export interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  start: string;
+  end: string;
+  location?: string;
+  attendeesCount: number;
+  colorId?: string;
+  htmlLink?: string;
+}
+
 /** ---------- Calendar API ---------- */
 
 /** Payload interface for creating a Google Calendar event. */
@@ -198,4 +211,42 @@ export async function createCalendarEvent(
 
   const data = await response.json();
   return { success: true, eventId: data.id, htmlLink: data.htmlLink };
+}
+
+/**
+ * Lists upcoming Google Calendar events from the current time.
+ */
+export async function listCalendarEvents(): Promise<{
+  success: boolean;
+  events?: GoogleCalendarEvent[];
+  error?: string;
+}> {
+  const accessToken = getToken();
+
+  if (!accessToken) {
+    return { success: false, error: "Chưa kết nối Google Calendar" };
+  }
+
+  const response = await fetch("/api/google/calendar/events", {
+    method: "GET",
+    headers: { "x-access-token": accessToken },
+  });
+
+  if (!response.ok) {
+    let message = `Lỗi API: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      if (errorBody?.error) message = errorBody.error;
+    } catch {
+      // ignore
+    }
+    return { success: false, error: message };
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    return { success: false, error: data.error || "Lỗi không xác định" };
+  }
+
+  return { success: true, events: data.events };
 }

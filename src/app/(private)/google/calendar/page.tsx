@@ -25,8 +25,12 @@ import {
   clearToken,
   isConnected,
   createCalendarEvent,
+  listCalendarEvents,
   type CreateEventPayload,
+  type GoogleCalendarEvent,
 } from "@/modules/google/calendar/services/google-calendar-services";
+import { EventList } from "@/modules/google/calendar/components/event-list";
+import { getCalendarColumns } from "@/modules/google/calendar/components/columns";
 
 const isAuthError = (msg: string) =>
   /unauthorized|invalid credentials|token/i.test(msg ?? "");
@@ -75,6 +79,8 @@ export default function GoogleCalendarPage() {
   const [submitting, setSubmitting] = useState(false);
   const [attendeesInput, setAttendeesInput] = useState("");
   const [attendeeTags, setAttendeeTags] = useState<string[]>([]);
+  const [events, setEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
 
   const {
     register,
@@ -115,27 +121,39 @@ export default function GoogleCalendarPage() {
     setConnected(isConnected());
   }, []);
 
+  const refreshEvents = useCallback(async () => {
+    setLoadingEvents(true);
+    const result = await listCalendarEvents();
+    if (result.success && result.events) {
+      setEvents(result.events);
+    } else if (result.error && !result.error.includes("Chưa kết nối")) {
+      toast.error(result.error);
+    }
+    setLoadingEvents(false);
+  }, []);
+
   const handleConnect = useCallback(async () => {
     setConnecting(true);
     try {
       await requestGoogleAuth();
       setConnected(true);
       toast.success("Đã kết nối Google Calendar thành công!");
+      refreshEvents();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("popup_closed_by_user")) {
-        // silently ignore
         return;
       }
       toast.error(`Kết nối thất bại: ${msg}`);
     } finally {
       setConnecting(false);
     }
-  }, []);
+  }, [refreshEvents]);
 
   const handleDisconnect = useCallback(() => {
     clearToken();
     setConnected(false);
+    setEvents([]);
     setAttendeeTags([]);
     reset();
     toast.info("Đã ngắt kết nối Google Calendar");
@@ -213,6 +231,7 @@ export default function GoogleCalendarPage() {
               },
             });
           }
+          refreshEvents();
         } else {
           const errorMsg = result.error ?? "Lỗi không xác định";
           if (isAuthError(errorMsg)) {
@@ -234,7 +253,7 @@ export default function GoogleCalendarPage() {
         setSubmitting(false);
       }
     },
-    [connected, reset, handleDisconnect]
+    [connected, reset, handleDisconnect, refreshEvents]
   );
 
   return (
@@ -286,6 +305,19 @@ export default function GoogleCalendarPage() {
           </div>
         </div>
       </div>
+
+      {/* Events List */}
+      {connected && (
+        <div className="rounded-lg border p-4">
+          <h2 className="text-lg font-semibold mb-4">Danh sách sự kiện</h2>
+          <EventList
+            columns={getCalendarColumns({ onRefresh: refreshEvents })}
+            data={events}
+            onRefresh={refreshEvents}
+            isLoading={loadingEvents}
+          />
+        </div>
+      )}
 
       {/* Event Creation Form */}
       <div className="rounded-lg border p-6 space-y-4">

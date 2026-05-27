@@ -1,6 +1,57 @@
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 
+/** Shared OAuth2 client factory */
+function createOAuth2Client(accessToken: string) {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID,
+    process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+    process.env.GOOGLE_CALENDAR_REDIRECT_URI
+  );
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return oauth2Client;
+}
+
+/** GET /api/google/calendar/events — list events */
+export async function GET(request: NextRequest) {
+  try {
+    const accessToken = request.headers.get("x-access-token") || new URL(request.url).searchParams.get("accessToken");
+
+    if (!accessToken) {
+      return NextResponse.json({ success: false, error: "Missing access token" }, { status: 401 });
+    }
+
+    const oauth2Client = createOAuth2Client(accessToken);
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const now = new Date().toISOString();
+
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: now,
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 100,
+    });
+
+    const events = (response.data.items || []).map((item) => ({
+      id: item.id || "",
+      summary: item.summary || "(No title)",
+      start: item.start?.dateTime || item.start?.date || "",
+      end: item.end?.dateTime || item.end?.date || "",
+      location: item.location || undefined,
+      attendeesCount: (item.attendees || []).length,
+      colorId: item.colorId || undefined,
+      htmlLink: item.htmlLink || undefined,
+    }));
+
+    return NextResponse.json({ success: true, events });
+  } catch (error) {
+    console.error("[Google Calendar List Error]", error);
+    return NextResponse.json({ success: false, error: "Lỗi khi lấy danh sách sự kiện" }, { status: 500 });
+  }
+}
+
 interface CreateEventRequest {
   accessToken: string;
   summary: string;
@@ -39,14 +90,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID,
-      process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-      process.env.GOOGLE_CALENDAR_REDIRECT_URI
-    );
-
-    oauth2Client.setCredentials({ access_token: accessToken });
-
+    const oauth2Client = createOAuth2Client(accessToken);
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
     const eventBody: {
