@@ -16,18 +16,15 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 
-import { RefreshCw, Search } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
@@ -36,14 +33,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react"
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { RefreshCw } from "lucide-react"
 
 import type { GoogleCalendarEvent } from "@/modules/google/calendar/services/google-calendar-services"
-import { cn } from "@/lib/utils"
 
 interface EventListProps {
   columns: ColumnDef<GoogleCalendarEvent, unknown>[]
@@ -64,7 +63,6 @@ export function EventList({
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = React.useState("")
 
   const table = useReactTable({
     data,
@@ -74,13 +72,11 @@ export function EventList({
       columnVisibility,
       rowSelection,
       columnFilters,
-      globalFilter,
     },
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -92,27 +88,47 @@ export function EventList({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center justify-between">
+        <div className="flex flex-1 items-center space-x-2">
           <Input
             placeholder="Tìm kiếm sự kiện..."
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-8"
+            value={(table.getColumn("summary")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("summary")?.setFilterValue(event.target.value)
+            }
+            className="h-8 w-50 lg:w-75"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={onRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")}
-          />
-          Làm mới
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Select
+            value={`${table.getState().pagination.pageSize}`}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger className="h-8 w-17.5">
+              <SelectValue
+                placeholder={table.getState().pagination.pageSize}
+              />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {[10, 20, 30, 40, 50].map((pageSize) => (
+                <SelectItem key={pageSize} value={`${pageSize}`}>
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
@@ -125,9 +141,9 @@ export function EventList({
                   <TableHead
                     key={header.id}
                     colSpan={header.colSpan}
-                    className={cn(
-                      header.id === "actions" && "w-[60px]"
-                    )}
+                    className={
+                      header.id === "actions" ? "w-15" : undefined
+                    }
                   >
                     {header.isPlaceholder
                       ? null
@@ -179,26 +195,18 @@ export function EventList({
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">Số dòng</p>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
-                />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem
-                    key={pageSize}
-                    value={`${pageSize}`}
-                  >
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <span className="text-sm text-muted-foreground">
+              {table.getState().pagination.pageIndex *
+                table.getState().pagination.pageSize +
+                1}
+              -
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) *
+                  table.getState().pagination.pageSize,
+                table.getFilteredRowModel().rows.length
+              )}{" "}
+              / {table.getFilteredRowModel().rows.length}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             <Button
