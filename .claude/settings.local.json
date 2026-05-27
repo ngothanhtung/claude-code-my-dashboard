@@ -6,7 +6,12 @@
       "Bash(npx next *)",
       "Bash(git commit -m ' *)",
       "Bash(npx eslint *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(node -e \"const g = require\\('googleapis'\\); console.log\\(Object.keys\\(g\\)\\);\")",
+      "Bash(grep -n 'Resource$Events$Insert\\\\|insert.*Schema$Event\\\\|insert.*GaxiosResponse' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
+      "Bash(grep -n 'interface Schema$Event\\\\|^ error' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
+      "Bash(grep -n '^    export interface Schema$Event' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
+      "Bash(grep -n 'Schema$Event' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)"
     ]
   }
 }

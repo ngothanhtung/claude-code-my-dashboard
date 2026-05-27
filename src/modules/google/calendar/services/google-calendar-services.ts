@@ -134,7 +134,7 @@ export async function requestGoogleAuth(): Promise<{ accessToken: string; expire
       },
     });
 
-    client.requestAccessToken({ prompt: 'consent' });
+    client.requestAccessToken();
   });
 }
 
