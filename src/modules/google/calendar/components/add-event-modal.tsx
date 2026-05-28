@@ -134,31 +134,16 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
     }
     setIsSubmitting(true)
     try {
-      formSchema.parse(formData)
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {}
-        err.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            newErrors[issue.path[0] as string] = issue.message
-          }
-        })
-        setErrors(newErrors)
-      }
-      setIsSubmitting(false)
-      return
-    }
-
-    try {
+      const validated = formSchema.parse(formData)
       const payload: CreateEventPayload = {
-        summary: formData.summary,
-        description: formData.description,
-        start: new Date(formData.start).toISOString(),
-        end: new Date(formData.end).toISOString(),
-        timeZone: formData.timeZone,
-        location: formData.location,
+        summary: validated.summary,
+        description: validated.description,
+        start: new Date(validated.start).toISOString(),
+        end: new Date(validated.end).toISOString(),
+        timeZone: validated.timeZone,
+        location: validated.location,
         attendees: formData.attendees,
-        colorId: formData.colorId,
+        colorId: validated.colorId,
       }
 
       const result = await createCalendarEvent(payload)
@@ -185,6 +170,17 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
         }
       }
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {}
+        err.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            newErrors[issue.path[0] as string] = issue.message
+          }
+        })
+        setErrors(newErrors)
+        setIsSubmitting(false)
+        return
+      }
       const msg = err instanceof Error ? err.message : String(err)
       if (isAuthError(msg)) {
         toast.error("Phiên đăng nhập hết hạn. Vui lòng kết nối lại.")
@@ -209,15 +205,15 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
         {trigger || (
           <Button type="button" variant="default" size="sm" className="cursor-pointer">
             <Plus className="w-4 h-4" />
-            Add Event
+            Thêm Event
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Create New Event</DialogTitle>
+          <DialogTitle>Tạo sự kiện mới</DialogTitle>
           <DialogDescription>
-            Fill in the details below to create a new calendar event.
+            Thêm sự kiện mới vào Google Calendar của bạn
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -329,7 +325,7 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
               <Users className="h-3.5 w-3.5" />
               Người tham dự
             </Label>
-            <div className="min-h-10.5 flex flex-wrap gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+            <div className="min-h-11 flex flex-wrap gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
               {formData.attendees.map((email) => (
                 <span
                   key={email}
@@ -397,7 +393,7 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
           {/* Actions */}
           <div className="flex justify-end space-x-2 pt-2">
             <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-              Cancel
+              Hủy
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
@@ -405,7 +401,7 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              {isSubmitting ? "Đang tạo..." : "Create Event"}
+              {isSubmitting ? "Đang tạo..." : "Tạo Event"}
             </Button>
           </div>
         </form>
