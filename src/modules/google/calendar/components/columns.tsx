@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 import type { GoogleCalendarEvent } from "@/modules/google/calendar/services/google-calendar-services"
+import { dateRangeFilterFn } from "./filter-fns"
 
 const COLOR_MAP: Record<string, string> = {
   "1": "#4285F4",
@@ -67,6 +68,7 @@ export function getCalendarColumns({
     {
       accessorKey: "start",
       header: "Bắt đầu",
+      filterFn: (row, _id, value: string) => dateRangeFilterFn(row, "start", value as Parameters<typeof dateRangeFilterFn>[2], (_addMeta) => {}),
       cell: ({ row }) => (
         <span className="text-sm">{formatDateTime(row.getValue("start"))}</span>
       ),

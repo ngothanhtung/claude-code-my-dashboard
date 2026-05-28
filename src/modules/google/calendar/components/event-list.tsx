@@ -24,7 +24,6 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -40,15 +39,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { RefreshCw } from "lucide-react"
 
 import type { GoogleCalendarEvent } from "@/modules/google/calendar/services/google-calendar-services"
+import { EventListToolbar } from "./event-list-toolbar"
+import { dateRangeFilterFn } from "./filter-fns"
 
 interface EventListProps {
   columns: ColumnDef<GoogleCalendarEvent, unknown>[]
   data: GoogleCalendarEvent[]
   onRefresh: () => void
   isLoading?: boolean
+  onAddEvent?: () => void
 }
 
 export function EventList({
@@ -56,6 +57,7 @@ export function EventList({
   data,
   onRefresh,
   isLoading,
+  onAddEvent,
 }: EventListProps) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -83,52 +85,34 @@ export function EventList({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    filterFns: {
+      dateRange: dateRangeFilterFn,
+    },
   })
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
-          <Input
-            placeholder="Tìm kiếm sự kiện..."
-            value={(table.getColumn("summary")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("summary")?.setFilterValue(event.target.value)
-            }
-            className="h-8 w-50 lg:w-75"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-2"
-            onClick={onRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+      <EventListToolbar table={table} onAddEvent={onAddEvent} />
+
+      {/* Page Size Selector */}
+      <div className="flex items-center justify-end">
+        <Select
+          value={`${table.getState().pagination.pageSize}`}
+          onValueChange={(value) => table.setPageSize(Number(value))}
+        >
+          <SelectTrigger className="h-8 w-17.5">
+            <SelectValue
+              placeholder={table.getState().pagination.pageSize}
             />
-          </Button>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="h-8 w-17.5">
-              <SelectValue
-                placeholder={table.getState().pagination.pageSize}
-              />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          </SelectTrigger>
+          <SelectContent side="top">
+            {[10, 20, 30, 40, 50].map((pageSize) => (
+              <SelectItem key={pageSize} value={`${pageSize}`}>
+                {pageSize}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
