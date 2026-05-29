@@ -12,11 +12,37 @@ function createOAuth2Client(accessToken: string) {
   return oauth2Client;
 }
 
-/** GET /api/google/calendar/events — list events */
+/** GET /api/google/calendar/events — list events or get colors */
 export async function GET(request: NextRequest) {
-  try {
-    const accessToken = request.headers.get("x-access-token") || new URL(request.url).searchParams.get("accessToken");
+  const url = new URL(request.url);
+  const path = url.pathname;
 
+  if (path.endsWith("/colors")) {
+    try {
+      const accessToken =
+        request.headers.get("x-access-token") ||
+        url.searchParams.get("accessToken");
+      if (!accessToken) {
+        return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+      }
+      const oauth2Client = createOAuth2Client(accessToken);
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+      const colorsResponse = await calendar.colors.get({});
+      return NextResponse.json({
+        success: true,
+        event: colorsResponse.data.event || {},
+      });
+    } catch (error) {
+      console.error("[Google Calendar Colors Error]", error);
+      return NextResponse.json({ error: "Failed to get colors" }, { status: 500 });
+    }
+  }
+
+  // Fall through to events list
+  try {
+    const accessToken =
+      request.headers.get("x-access-token") ||
+      url.searchParams.get("accessToken");
     if (!accessToken) {
       return NextResponse.json({ success: false, error: "Missing access token" }, { status: 401 });
     }
@@ -39,8 +65,10 @@ export async function GET(request: NextRequest) {
       summary: item.summary || "(No title)",
       start: item.start?.dateTime || item.start?.date || "",
       end: item.end?.dateTime || item.end?.date || "",
+      description: item.description || undefined,
       location: item.location || undefined,
       attendeesCount: (item.attendees || []).length,
+      attendees: (item.attendees || []).map((a) => a.email || "").filter(Boolean),
       colorId: item.colorId || undefined,
       htmlLink: item.htmlLink || undefined,
     }));
@@ -64,13 +92,73 @@ interface CreateEventRequest {
   colorId?: string;
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { accessToken, eventId, summary, description, start, end, timeZone, location, attendees, colorId } = body
+
+    if (!accessToken || !eventId) {
+      return NextResponse.json({ success: false, error: "Missing accessToken or eventId" }, { status: 400 })
+    }
+
+    const oauth2Client = createOAuth2Client(accessToken)
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client })
+
+    const patchBody: Record<string, unknown> = {}
+    if (summary !== undefined) patchBody.summary = summary
+    if (description !== undefined) patchBody.description = description
+    if (location !== undefined) patchBody.location = location
+    if (colorId !== undefined) patchBody.colorId = colorId
+    if (start !== undefined) patchBody.start = { dateTime: start, timeZone }
+    if (end !== undefined) patchBody.end = { dateTime: end, timeZone }
+    if (attendees !== undefined) {
+      patchBody.attendees = attendees.map((email: string) => ({ email }))
+    }
+
+    await calendar.events.patch({
+      calendarId: "primary",
+      eventId,
+      requestBody: patchBody,
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[Google Calendar PATCH Error]", error)
+    return NextResponse.json({ success: false, error: "Lỗi khi cập nhật sự kiện" }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const url = new URL(request.url)
+    const eventId = url.searchParams.get("eventId")
+    const accessToken = request.headers.get("x-access-token") || url.searchParams.get("accessToken")
+
+    if (!accessToken || !eventId) {
+      return NextResponse.json({ success: false, error: "Missing accessToken or eventId" }, { status: 400 })
+    }
+
+    const oauth2Client = createOAuth2Client(accessToken)
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client })
+
+    await calendar.events.delete({
+      calendarId: "primary",
+      eventId,
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[Google Calendar DELETE Error]", error)
+    return NextResponse.json({ success: false, error: "Lỗi khi xóa sự kiện" }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreateEventRequest = await request.json();
 
     const { accessToken, summary, start, end } = body;
 
-    // Validate required fields
     if (!accessToken || !summary || !start || !end) {
       return NextResponse.json(
         {
@@ -81,7 +169,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate ISO 8601 date-time format
     const dateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
     if (!dateTimeRegex.test(start) || !dateTimeRegex.test(end)) {
       return NextResponse.json(

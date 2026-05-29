@@ -1,26 +1,19 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { ExternalLink } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 
-import type { GoogleCalendarEvent } from "@/modules/google/calendar/services/google-calendar-services"
+import {
+  type GoogleCalendarEvent,
+  getEventColors,
+} from "@/modules/google/calendar/services/google-calendar-services"
+import { CalendarRowActions } from "./calendar-row-actions"
 import { dateRangeFilterFn } from "./filter-fns"
 
-const COLOR_MAP: Record<string, string> = {
-  "1": "#4285F4",
-  "2": "#0F9D58",
-  "3": "#FBBC04",
-  "4": "#DB4437",
-  "5": "#F4B400",
-  "6": "#0D904F",
-  "7": "#9C27B0",
-  "8": "#3F51B5",
-  "9": "#E91E63",
-  "10": "#00BCD4",
-  "11": "#795548",
+function getEventColor(colorId: string | undefined): string {
+  if (!colorId) return "#7986CB"
+  return getEventColors()[colorId]?.background ?? "#7986CB"
 }
 
 function formatDateTime(iso: string): string {
@@ -40,18 +33,30 @@ function formatDateTime(iso: string): string {
 
 interface CalendarColumnActions {
   onRefresh?: () => void
+  onDeleted?: () => void
 }
 
 export function getCalendarColumns({
   onRefresh,
+  onDeleted,
 }: CalendarColumnActions = {}): ColumnDef<GoogleCalendarEvent>[] {
   return [
+    {
+      id: "rowNumber",
+      header: "#",
+      size: 50,
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">{row.index + 1}</span>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "summary",
       header: "Tiêu đề",
       cell: ({ row }) => {
         const colorId = row.original.colorId
-        const color = colorId ? COLOR_MAP[colorId] : "#4285F4"
+        const color = getEventColor(colorId)
         return (
           <div className="flex items-center gap-2">
             <div
@@ -68,7 +73,13 @@ export function getCalendarColumns({
     {
       accessorKey: "start",
       header: "Bắt đầu",
-      filterFn: (row, _id, value: string) => dateRangeFilterFn(row, "start", value as Parameters<typeof dateRangeFilterFn>[2], (_addMeta) => {}),
+      filterFn: (row, _id, value: string) =>
+        dateRangeFilterFn(
+          row,
+          "start",
+          value as Parameters<typeof dateRangeFilterFn>[2],
+          (_addMeta) => {}
+        ),
       cell: ({ row }) => (
         <span className="text-sm">{formatDateTime(row.getValue("start"))}</span>
       ),
@@ -97,7 +108,8 @@ export function getCalendarColumns({
       header: "Người tham dự",
       cell: ({ row }) => {
         const count = row.getValue("attendeesCount") as number
-        if (count === 0) return <span className="text-sm text-muted-foreground">—</span>
+        if (count === 0)
+          return <span className="text-sm text-muted-foreground">—</span>
         return (
           <Badge variant="secondary" className="text-xs">
             {count} người
@@ -108,23 +120,13 @@ export function getCalendarColumns({
     {
       id: "actions",
       header: "",
-      cell: ({ row }) => {
-        const htmlLink = row.original.htmlLink
-        if (!htmlLink) return null
-        return (
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => window.open(htmlLink, "_blank")}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <CalendarRowActions row={row} onDeleted={onDeleted} />
+        </div>
+      ),
       enableSorting: false,
+      enableHiding: false,
     },
   ]
 }

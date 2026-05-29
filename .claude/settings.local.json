@@ -11,7 +11,23 @@
       "Bash(grep -n 'Resource$Events$Insert\\\\|insert.*Schema$Event\\\\|insert.*GaxiosResponse' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
       "Bash(grep -n 'interface Schema$Event\\\\|^ error' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
       "Bash(grep -n '^    export interface Schema$Event' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
-      "Bash(grep -n 'Schema$Event' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)"
+      "Bash(grep -n 'Schema$Event' /Users/tony/GitHub/claude-code-my-dashboard/node_modules/googleapis/build/src/apis/calendar/v3.d.ts)",
+      "Bash(/Users/tony/.claude/plugins/cache/superpowers-marketplace/superpowers/5.1.0/skills/brainstorming/scripts/start-server.sh --project-dir /Users/tony/GitHub/claude-code-my-dashboard)",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__new_page",
+      "mcp__chrome-devtools__list_pages",
+      "Bash(git -C /Users/tony/GitHub/claude-code-my-dashboard rev-parse HEAD)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3002/)",
+      "Bash(node -e ' *)",
+      "WebSearch",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:googleapis.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh search *)"
     ]
   }
 }

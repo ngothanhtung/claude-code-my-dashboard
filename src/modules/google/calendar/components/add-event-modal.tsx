@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Plus, Loader2 } from "lucide-react"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -33,8 +33,11 @@ import {
 } from "lucide-react"
 import {
   createCalendarEvent,
+  updateCalendarEvent,
   isConnected,
+  getEventColors,
   type CreateEventPayload,
+  type GoogleCalendarEvent,
 } from "@/modules/google/calendar/services/google-calendar-services"
 
 const TIMEZONE_OPTIONS = [
@@ -48,17 +51,13 @@ const TIMEZONE_OPTIONS = [
   { value: "UTC", label: "UTC" },
 ]
 
-const EVENT_COLORS = [
-  { id: "blue", value: "1", hex: "#4285F4" },
-  { id: "green", value: "2", hex: "#0F9D58" },
-  { id: "red", value: "3", hex: "#DB4437" },
-  { id: "orange", value: "4", hex: "#F4B400" },
-  { id: "purple", value: "5", hex: "#9C27B0" },
-  { id: "pink", value: "6", hex: "#E91E63" },
-] as const
-
-const isAuthError = (msg: string) =>
-  /unauthorized|invalid credentials|token/i.test(msg ?? "")
+/** Ordered color list for the picker — prefer cached API colors, fallback to defaults */
+const EVENT_COLORS = Object.entries(
+  getEventColors()
+).map(([value, { background }]) => ({
+  value,
+  hex: background,
+}))
 
 const formSchema = z
   .object({
@@ -78,27 +77,60 @@ const formSchema = z
 type FormData = z.infer<typeof formSchema>
 
 interface AddEventModalProps {
-  onAddEvent?: () => void
+  initialData?: GoogleCalendarEvent | null
+  onSave?: () => void
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-const initialState: FormData & { attendees: string[] } = {
-  summary: "",
-  description: "",
-  start: "",
-  end: "",
-  timeZone: "Asia/Ho_Chi_Minh",
-  location: "",
-  attendees: [],
-  colorId: "1",
+function toLocalDateTime(iso: string): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
-  const [open, setOpen] = useState(false)
-  const [formData, setFormData] = useState(initialState)
+function buildInitialState(initialData?: GoogleCalendarEvent | null): FormData & { attendees: string[] } {
+  if (initialData) {
+    return {
+      summary: initialData.summary,
+      description: initialData.description ?? "",
+      start: toLocalDateTime(initialData.start),
+      end: toLocalDateTime(initialData.end),
+      timeZone: "Asia/Ho_Chi_Minh",
+      location: initialData.location ?? "",
+      attendees: initialData.attendees ?? [],
+      colorId: initialData.colorId ?? "1",
+    }
+  }
+  return {
+    summary: "",
+    description: "",
+    start: "",
+    end: "",
+    timeZone: "Asia/Ho_Chi_Minh",
+    location: "",
+    attendees: [],
+    colorId: "1",
+  }
+}
+
+export function AddEventModal({ initialData, onSave, trigger, open: controlledOpen, onOpenChange }: AddEventModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [formData, setFormData] = useState(buildInitialState(initialData))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [attendeesInput, setAttendeesInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    setFormData(buildInitialState(initialData))
+  }, [initialData])
+
+  const isEditing = !!initialData
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
 
   const handleAttendeeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
@@ -135,38 +167,52 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
     setIsSubmitting(true)
     try {
       const validated = formSchema.parse(formData)
-      const payload: CreateEventPayload = {
-        summary: validated.summary,
-        description: validated.description,
-        start: new Date(validated.start).toISOString(),
-        end: new Date(validated.end).toISOString(),
-        timeZone: validated.timeZone,
-        location: validated.location,
-        attendees: formData.attendees,
-        colorId: validated.colorId,
-      }
+      setErrors({})
 
-      const result = await createCalendarEvent(payload)
-
-      if (result.success) {
-        setFormData(initialState)
-        setErrors({})
-        setAttendeesInput("")
-        if (result.htmlLink) {
-          toast("Đã tạo event thành công", {
-            action: { label: "Mở", onClick: () => window.open(result.htmlLink, "_blank") },
-          })
+      if (isEditing && initialData) {
+        const result = await updateCalendarEvent(initialData.id, {
+          summary: validated.summary,
+          description: validated.description,
+          start: new Date(validated.start).toISOString(),
+          end: new Date(validated.end).toISOString(),
+          timeZone: validated.timeZone,
+          location: validated.location,
+          attendees: formData.attendees,
+          colorId: validated.colorId,
+        })
+        if (result.success) {
+          toast.success("Đã cập nhật sự kiện thành công")
+          onSave?.()
+          setOpen(false)
         } else {
-          toast.success("Đã tạo event thành công")
+          toast.error(`Cập nhật thất bại: ${result.error}`)
         }
-        onAddEvent?.()
-        setOpen(false)
       } else {
-        const errorMsg = result.error ?? "Lỗi không xác định"
-        if (isAuthError(errorMsg)) {
-          toast.error("Phiên đăng nhập hết hạn. Vui lòng kết nối lại.")
+        const payload: CreateEventPayload = {
+          summary: validated.summary,
+          description: validated.description,
+          start: new Date(validated.start).toISOString(),
+          end: new Date(validated.end).toISOString(),
+          timeZone: validated.timeZone,
+          location: validated.location,
+          attendees: formData.attendees,
+          colorId: validated.colorId,
+        }
+        const result = await createCalendarEvent(payload)
+        if (result.success) {
+          setFormData(buildInitialState(null))
+          setAttendeesInput("")
+          if (result.htmlLink) {
+            toast("Đã tạo event thành công", {
+              action: { label: "Mở", onClick: () => window.open(result.htmlLink, "_blank") },
+            })
+          } else {
+            toast.success("Đã tạo event thành công")
+          }
+          onSave?.()
+          setOpen(false)
         } else {
-          toast.error(`Tạo event thất bại: ${errorMsg}`)
+          toast.error(`Tạo event thất bại: ${result.error}`)
         }
       }
     } catch (err) {
@@ -182,18 +228,14 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
         return
       }
       const msg = err instanceof Error ? err.message : String(err)
-      if (isAuthError(msg)) {
-        toast.error("Phiên đăng nhập hết hạn. Vui lòng kết nối lại.")
-      } else {
-        toast.error(`Tạo event thất bại: ${msg}`)
-      }
+      toast.error(msg)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleCancel = () => {
-    setFormData(initialState)
+    setFormData(buildInitialState(initialData))
     setErrors({})
     setAttendeesInput("")
     setOpen(false)
@@ -201,19 +243,24 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button type="button" variant="default" size="sm" className="cursor-pointer">
-            <Plus className="w-4 h-4" />
-            Thêm Event
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button type="button" variant="default" size="sm" className="cursor-pointer">
+              <Plus className="w-4 h-4" />
+              Thêm Event
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      {isControlled && trigger}
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Tạo sự kiện mới</DialogTitle>
+          <DialogTitle>{isEditing ? "Cập nhật sự kiện" : "Tạo sự kiện mới"}</DialogTitle>
           <DialogDescription>
-            Thêm sự kiện mới vào Google Calendar của bạn
+            {isEditing
+              ? "Cập nhật thông tin sự kiện trên Google Calendar"
+              : "Thêm sự kiện mới vào Google Calendar của bạn"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -366,9 +413,9 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
             <div className="flex gap-3">
               {EVENT_COLORS.map((color) => (
                 <label
-                  key={color.id}
+                  key={color.value}
                   className="cursor-pointer"
-                  title={color.id.charAt(0).toUpperCase() + color.id.slice(1)}
+                  title={color.value}
                 >
                   <input
                     type="radio"
@@ -401,7 +448,13 @@ export function AddEventModal({ onAddEvent, trigger }: AddEventModalProps) {
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              {isSubmitting ? "Đang tạo..." : "Tạo Event"}
+              {isSubmitting
+                ? isEditing
+                  ? "Đang cập nhật..."
+                  : "Đang tạo..."
+                : isEditing
+                  ? "Cập nhật"
+                  : "Tạo Event"}
             </Button>
           </div>
         </form>

@@ -23,6 +23,7 @@ import {
   clearToken,
   isConnected,
   listCalendarEvents,
+  fetchAndCacheEventColors,
   type GoogleCalendarEvent,
 } from "@/modules/google/calendar/services/google-calendar-services"
 import { EventList } from "@/modules/google/calendar/components/event-list"
@@ -46,10 +47,15 @@ export default function GoogleCalendarPage() {
     document.head.appendChild(script)
   }, [])
 
-  // Check connection on mount
+  // Check connection and fetch events on mount
   useEffect(() => {
-    setConnected(isConnected())
-  }, [])
+    const wasConnected = isConnected()
+    setConnected(wasConnected)
+    if (wasConnected) {
+      fetchAndCacheEventColors()
+      refreshEvents()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshEvents = useCallback(async () => {
     setLoadingEvents(true)
@@ -68,6 +74,7 @@ export default function GoogleCalendarPage() {
       await requestGoogleAuth()
       setConnected(true)
       toast.success("Đã kết nối Google Calendar thành công!")
+      fetchAndCacheEventColors()
       refreshEvents()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -271,7 +278,7 @@ export default function GoogleCalendarPage() {
               </CardHeader>
               <CardContent>
                 <EventList
-                  columns={getCalendarColumns({ onRefresh: refreshEvents })}
+                  columns={getCalendarColumns({ onRefresh: refreshEvents, onDeleted: refreshEvents })}
                   data={events}
                   onRefresh={refreshEvents}
                   onAddEvent={refreshEvents}

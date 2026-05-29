@@ -5,6 +5,52 @@
 
 const STORAGE_KEY_ACCESS_TOKEN = 'gcal_access_token';
 const STORAGE_KEY_TOKEN_EXPIRY = 'gcal_token_expiry';
+const STORAGE_KEY_EVENT_COLORS = 'gcal_event_colors';
+
+/** Google Calendar event color definitions (fallback when API is unavailable) */
+export const DEFAULT_EVENT_COLORS: Record<string, { background: string; foreground: string }> = {
+  "1":  { background: "#7986CB", foreground: "#ffffff" },
+  "2":  { background: "#33B679", foreground: "#ffffff" },
+  "3":  { background: "#8E24AA", foreground: "#ffffff" },
+  "4":  { background: "#E67C73", foreground: "#ffffff" },
+  "5":  { background: "#F6C026", foreground: "#000000" },
+  "6":  { background: "#F5511D", foreground: "#ffffff" },
+  "7":  { background: "#039BE5", foreground: "#ffffff" },
+  "8":  { background: "#616161", foreground: "#ffffff" },
+  "9":  { background: "#3F51B5", foreground: "#ffffff" },
+  "10": { background: "#0B8043", foreground: "#ffffff" },
+  "11": { background: "#D50000", foreground: "#ffffff" },
+}
+
+/** Get cached event colors from localStorage */
+export function getEventColors(): Record<string, { background: string; foreground: string }> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_EVENT_COLORS)
+    if (raw) return JSON.parse(raw)
+  } catch {
+    // ignore
+  }
+  return DEFAULT_EVENT_COLORS
+}
+
+/** Fetch and cache event colors from Google Calendar API */
+export async function fetchAndCacheEventColors(): Promise<void> {
+  const accessToken = getToken()
+  if (!accessToken) return
+
+  try {
+    const response = await fetch("/api/google/calendar/colors", {
+      headers: { "x-access-token": accessToken },
+    })
+    if (!response.ok) return
+    const data = await response.json()
+    if (data.success && data.event) {
+      localStorage.setItem(STORAGE_KEY_EVENT_COLORS, JSON.stringify(data.event))
+    }
+  } catch {
+    // ignore — fallback to default colors
+  }
+}
 
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 
@@ -145,8 +191,10 @@ export interface GoogleCalendarEvent {
   summary: string;
   start: string;
   end: string;
+  description?: string;
   location?: string;
   attendeesCount: number;
+  attendees?: string[];
   colorId?: string;
   htmlLink?: string;
 }
@@ -211,6 +259,70 @@ export async function createCalendarEvent(
 
   const data = await response.json();
   return { success: true, eventId: data.id, htmlLink: data.htmlLink };
+}
+
+/**
+ * Updates an existing Google Calendar event via the internal Next.js API route.
+ */
+export async function updateCalendarEvent(
+  eventId: string,
+  payload: Partial<Omit<CreateEventPayload, "start" | "end"> & { start?: string; end?: string }>
+): Promise<{ success: boolean; error?: string }> {
+  const accessToken = getToken();
+  if (!accessToken) {
+    return { success: false, error: "Chưa kết nối Google Calendar" };
+  }
+
+  const response = await fetch("/api/google/calendar/events", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, eventId, accessToken }),
+  });
+
+  if (!response.ok) {
+    let message = `Lỗi API: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      if (errorBody?.error) message = errorBody.error;
+    } catch {
+      // ignore
+    }
+    return { success: false, error: message };
+  }
+
+  const data = await response.json();
+  return data.success ? { success: true } : { success: false, error: data.error };
+}
+
+/**
+ * Deletes a Google Calendar event via the internal Next.js API route.
+ */
+export async function deleteCalendarEvent(
+  eventId: string
+): Promise<{ success: boolean; error?: string }> {
+  const accessToken = getToken();
+  if (!accessToken) {
+    return { success: false, error: "Chưa kết nối Google Calendar" };
+  }
+
+  const response = await fetch(`/api/google/calendar/events?eventId=${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+    headers: { "x-access-token": accessToken },
+  });
+
+  if (!response.ok) {
+    let message = `Lỗi API: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      if (errorBody?.error) message = errorBody.error;
+    } catch {
+      // ignore
+    }
+    return { success: false, error: message };
+  }
+
+  const data = await response.json();
+  return data.success ? { success: true } : { success: false, error: data.error };
 }
 
 /**
